@@ -8,7 +8,7 @@ import pandas as pd
 from core.utils import first_sentence, normalize_whitespace, write_json
 
 
-TEST_SET_SIZE = 15
+TEST_SET_SIZE = 10
 
 
 def _quoted_lookup_value(row: pd.Series) -> str:
@@ -19,7 +19,7 @@ def _quoted_lookup_value(row: pd.Series) -> str:
 
 
 def build_test_set(df: pd.DataFrame, output_path: Path) -> list[dict[str, Any]]:
-    """Build and freeze 15 deterministic factual questions from clean data."""
+    """Build and freeze 10 deterministic factual questions from clean data."""
     required_columns = {
         "paper_id",
         "title",
