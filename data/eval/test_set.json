@@ -1,0 +1,137 @@
+[
+  {
+    "id": "q1",
+    "question_type": "factual",
+    "question": "Who authored the paper 'AI-Enabled Force and Torque Control for Human Robot Interaction'?",
+    "ground_truth": "Vishal Khanna",
+    "ground_truth_doc_ids": [
+      "10.26634/javr.4.1.1115"
+    ]
+  },
+  {
+    "id": "q2",
+    "question_type": "factual",
+    "question": "When was the paper 'Edge AI in Wearable Devices' published?",
+    "ground_truth": "2028-06-20",
+    "ground_truth_doc_ids": [
+      "10.26634/javr.4.1.1116"
+    ]
+  },
+  {
+    "id": "q3",
+    "question_type": "factual",
+    "question": "What categories are associated with the paper 'ICARECS-2026 - VR NEURAL CLASSROOM'?",
+    "ground_truth": "journal-article",
+    "ground_truth_doc_ids": [
+      "10.26634/javr.4.1.11309"
+    ]
+  },
+  {
+    "id": "q4",
+    "question_type": "factual",
+    "question": "What is the main contribution described in 'The Rise of Augmented Reality in Teacher Education: a Bibliometric Analysis of Research'?",
+    "ground_truth": "In the digital era, immersive learning media is increasingly popular in the educational sphere.",
+    "ground_truth_doc_ids": [
+      "10.26634/javr.4.1.1273"
+    ]
+  },
+  {
+    "id": "q5",
+    "question_type": "factual",
+    "question": "Who authored the paper 'Mind Reader Robot: an Arduino-Based Game'?",
+    "ground_truth": "sritmkiran",
+    "ground_truth_doc_ids": [
+      "10.26634/javr.4.1.1477"
+    ]
+  },
+  {
+    "id": "q6",
+    "question_type": "factual",
+    "question": "When was the paper '10.22158/eltls.v8n3p21' published?",
+    "ground_truth": "2027-05-07",
+    "ground_truth_doc_ids": [
+      "10.22158/eltls.v8n3p21"
+    ]
+  },
+  {
+    "id": "q7",
+    "question_type": "factual",
+    "question": "What categories are associated with the paper 'PENGARUH MODEL PEMBELAJARAN PROBLEM BASED LEARNING BERBANTUAN MEDIA GASINGKAR TERHADAP PEMAHAMAN KONSEP GARIS SINGGUNG LINGKARAN SISWA KELAS XI SMA PGRI 2 KAYEN'?",
+    "ground_truth": "journal-article",
+    "ground_truth_doc_ids": [
+      "10.26877/jipmat.v11i1.2279"
+    ]
+  },
+  {
+    "id": "q8",
+    "question_type": "factual",
+    "question": "What is the main contribution described in 'The Kalashnikov Generation'?",
+    "ground_truth": "Written in a vivid, direct style, The Kalashnikov Generation takes us into the heart of the Democratic Republic of the Congo, amid the hills and forests of Kivu and Ituri, where thousands of young people and children fight with Kalashnikovs in the many militias and armies that have fueled a war of staggering complexity and brutality for three decades.",
+    "ground_truth_doc_ids": [
+      "10.11116/9789461667755"
+    ]
+  },
+  {
+    "id": "q9",
+    "question_type": "factual",
+    "question": "Who authored the paper 'Knowledge-Enhanced Semantic Reasoning Model for Implicit Sentiment Recognition'?",
+    "ground_truth": "Yuhui Sun, Feng Tian",
+    "ground_truth_doc_ids": [
+      "10.32738/jeppm-2025-345"
+    ]
+  },
+  {
+    "id": "q10",
+    "question_type": "factual",
+    "question": "When was the paper 'A scientometric study of retrieval-augmented generation research: Mapping the intellectual landscape of a transformative AI paradigm' published?",
+    "ground_truth": "2027-01-01",
+    "ground_truth_doc_ids": [
+      "10.5267/j.ijdns.2026.24"
+    ]
+  },
+  {
+    "id": "q11",
+    "question_type": "factual",
+    "question": "What categories are associated with the paper 'Design and Evaluation of a Hybrid Natural Language Processing and Machine Learning Model for Economic News Sentiment Analysis to Predict Price Fluctuations in the Iran Mercantile Exchange'?",
+    "ground_truth": "journal-article",
+    "ground_truth_doc_ids": [
+      "10.61838/jafci.485"
+    ]
+  },
+  {
+    "id": "q12",
+    "question_type": "factual",
+    "question": "What is the main contribution described in 'A Three-Dimensional Analysis of the Role of Popular Resistance in Strengthening National Sovereignty in Light of Imami Jurisprudence and the International Legal Order: Proposing a Novel Conceptual Model'?",
+    "ground_truth": "This study aims to provide a three-dimensional analysis of the role of popular resistance in strengthening national sovereignty, with a focus on Imami jurisprudence, the domestic legal system of the Islamic Republic of Iran, and international law.",
+    "ground_truth_doc_ids": [
+      "10.61838/jhrlp.213"
+    ]
+  },
+  {
+    "id": "q13",
+    "question_type": "factual",
+    "question": "Who authored the paper 'The Effects of Domestic Policies of Governments Before and After the Revolution in Alignment with the Command Economy Model'?",
+    "ground_truth": "Shahram Mohammadi, Hasan Eivazzadeh, Malek Zolghadr",
+    "ground_truth_doc_ids": [
+      "10.61838/jhrlp.268"
+    ]
+  },
+  {
+    "id": "q14",
+    "question_type": "factual",
+    "question": "When was the paper 'Designing a Vocational Education Management Model in the Marginalized Areas of Tehran' published?",
+    "ground_truth": "2027-01-01",
+    "ground_truth_doc_ids": [
+      "10.61838/jtesd.399"
+    ]
+  },
+  {
+    "id": "q15",
+    "question_type": "factual",
+    "question": "What categories are associated with the paper 'Examining the Contexts of Personal Writing with Emphasis on the Two Collections Roozha and Roozha dar Rah'?",
+    "ground_truth": "journal-article",
+    "ground_truth_doc_ids": [
+      "10.61838/jtpll.381"
+    ]
+  }
+]
