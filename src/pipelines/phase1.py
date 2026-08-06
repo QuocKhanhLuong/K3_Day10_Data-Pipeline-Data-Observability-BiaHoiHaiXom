@@ -395,3 +395,8 @@ def main() -> None:
     print("Freshness status: PASS")
     print(f"Frozen test set SHA-256: {frozen_test_set_sha256}")
     print(f"Report: {settings.paths.baseline_report}")
+
+
+if __name__ == "__main__":
+    main()
+

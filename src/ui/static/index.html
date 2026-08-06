@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Pipeline & Observability Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title">Data Observability & RAG Pipeline</div>
+        <div class="brand-subtitle">Three-State Comparison: Baseline • Corrupted • Repaired</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="fetchDashboardData()">↻ Refresh Data</button>
+      <button class="btn btn-primary" id="btn-run-all" onclick="runPipeline('corruption_flow')">▶ Run Pipeline Flow</button>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Interactive Pipeline Stepper -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🚀 Pipeline Architecture Stepper</div>
+        <div id="status-indicator" class="badge badge-pass">System Ready</div>
+      </div>
+      <div class="stepper-flow">
+        <div class="step-item success" id="step-ingestion">
+          <div class="step-node">1</div>
+          <div class="step-label">Raw Ingestion</div>
+          <div class="step-desc">Crossref REST API</div>
+        </div>
+        <div class="step-item success" id="step-baseline">
+          <div class="step-node">2</div>
+          <div class="step-label">Clean Baseline</div>
+          <div class="step-desc">ChromaDB Vector Index</div>
+        </div>
+        <div class="step-item danger" id="step-corrupted">
+          <div class="step-node">3</div>
+          <div class="step-label">Controlled Corruption</div>
+          <div class="step-desc">Null/Duplicates/Noise</div>
+        </div>
+        <div class="step-item success" id="step-repaired">
+          <div class="step-node">4</div>
+          <div class="step-label">Data Repair</div>
+          <div class="step-desc">Sanitization Rules</div>
+        </div>
+        <div class="step-item active" id="step-eval">
+          <div class="step-node">5</div>
+          <div class="step-label">Evaluation & Report</div>
+          <div class="step-desc">RAG Metrics & Quality</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('overview')">📊 Executive Overview</button>
+      <button class="tab-btn" onclick="switchTab('three-state')">⚡ Three-State Comparison</button>
+      <button class="tab-btn" onclick="switchTab('data-inspector')">🔍 Data & Corruption Inspector</button>
+      <button class="tab-btn" onclick="switchTab('rag-answers')">🤖 RAG Evaluation QA</button>
+    </nav>
+
+    <!-- Tab 1: Executive Overview -->
+    <section id="tab-overview" class="tab-content active">
+      <div class="grid-3">
+        <div class="metric-card baseline">
+          <span class="state-badge baseline">Baseline State</span>
+          <div class="metric-val" id="val-hit-baseline">--</div>
+          <div class="metric-lbl">Retrieval Hit Rate</div>
+          <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);">
+            Token F1: <strong id="val-f1-baseline" style="color: white;">--</strong> | Status: <span class="badge badge-pass" id="badge-qual-baseline">PASS</span>
+          </div>
+        </div>
+
+        <div class="metric-card corrupted">
+          <span class="state-badge corrupted">Corrupted State</span>
+          <div class="metric-val" id="val-hit-corrupted" style="color: var(--accent-rose);">--</div>
+          <div class="metric-lbl">Retrieval Hit Rate</div>
+          <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);">
+            Token F1: <strong id="val-f1-corrupted" style="color: white;">--</strong> | Status: <span class="badge badge-fail" id="badge-qual-corrupted">FAIL</span>
+          </div>
+        </div>
+
+        <div class="metric-card repaired">
+          <span class="state-badge repaired">Repaired State</span>
+          <div class="metric-val" id="val-hit-repaired" style="color: var(--accent-emerald);">--</div>
+          <div class="metric-lbl">Retrieval Hit Rate</div>
+          <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary);">
+            Token F1: <strong id="val-f1-repaired" style="color: white;">--</strong> | Status: <span class="badge badge-pass" id="badge-qual-repaired">PASS</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+          <div class="card-title">🖥️ Execution Control & Logs</div>
+          <button class="btn btn-secondary" onclick="runPipeline('phase1')">Run Phase 1 Only</button>
+        </div>
+        <div class="terminal" id="terminal-logs">
+          <div class="terminal-line">[System] Web UI connected. Ready for execution.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Three-State Comparison -->
+    <section id="tab-three-state" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚖️ Three-State Comparison Table</div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Metric / Signal</th>
+                <th>Baseline</th>
+                <th>Corrupted</th>
+                <th>Repaired</th>
+                <th>Impact / Recovery</th>
+              </tr>
+            </thead>
+            <tbody id="three-state-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: Data Inspector -->
+    <section id="tab-data-inspector" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🦠 Corruption Log Viewer</div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Rule Name</th>
+                <th>Target Field</th>
+                <th>Affected Rows</th>
+                <th>Description / Corruption Strategy</th>
+              </tr>
+            </thead>
+            <tbody id="corruption-log-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Dataset Records Preview</div>
+          <select id="dataset-selector" onchange="renderDatasetSample()" style="padding: 6px 12px; border-radius: 6px; background: var(--bg-secondary); color: white; border: 1px solid var(--bg-card-border);">
+            <option value="clean_baseline">Clean Baseline Records</option>
+            <option value="corrupted_clean">Corrupted Records</option>
+            <option value="repaired_clean">Repaired Records</option>
+            <option value="raw_records">Raw Crawled Records</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Paper ID</th>
+                <th>Title</th>
+                <th>Published</th>
+                <th>Primary Category</th>
+                <th>Summary Snippet</th>
+              </tr>
+            </thead>
+            <tbody id="dataset-preview-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: RAG Evaluation Answers -->
+    <section id="tab-rag-answers" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🤖 RAG Answer Comparison (Baseline vs Corrupted vs Repaired)</div>
+        </div>
+        <div id="answers-container">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

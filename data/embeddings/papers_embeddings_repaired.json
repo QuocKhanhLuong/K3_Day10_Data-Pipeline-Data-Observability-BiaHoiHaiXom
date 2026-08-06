@@ -1,7 +1,11 @@
 {
   "backend": "chroma",
   "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+<<<<<<< HEAD
+  "persist_path": "D:\\vin\\lab10\\K3_Day10_Data-Pipeline-Data-Observability\\data\\chroma",
+=======
   "persist_path": "/Users/trannguyenmyanh/Documents/AI_In_Action/K3_Day10_Data-Pipeline-Data-Observability/data/chroma",
+>>>>>>> main
   "collection_name": "papers-repaired",
   "documents": [
     {

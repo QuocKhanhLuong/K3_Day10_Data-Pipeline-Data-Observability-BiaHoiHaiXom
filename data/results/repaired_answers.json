@@ -25,7 +25,11 @@
     "judge": {
       "score": 1,
       "correct": false,
+<<<<<<< HEAD
+      "reasoning": "The model answer provided an author not listed in the reference answer."
+=======
       "reasoning": "The model answer provided an author not present in the reference answer."
+>>>>>>> main
     }
   },
   {
@@ -54,7 +58,11 @@
     "judge": {
       "score": 1,
       "correct": false,
+<<<<<<< HEAD
+      "reasoning": "The model provided a different publication date than the reference answer."
+=======
       "reasoning": "The model provided a different publication date (2026-07-04) than the reference answer (2026-08-05)."
+>>>>>>> main
     }
   },
   {
@@ -83,7 +91,11 @@
     "judge": {
       "score": 5,
       "correct": true,
+<<<<<<< HEAD
+      "reasoning": "The model answer perfectly matches the reference answer."
+=======
       "reasoning": "The model answer is identical to the reference answer."
+>>>>>>> main
     }
   },
   {
@@ -170,7 +182,11 @@
     "judge": {
       "score": 1,
       "correct": false,
+<<<<<<< HEAD
+      "reasoning": "The model provided a different publication date (2026-02-27) than the reference answer (2026-08-04)."
+=======
       "reasoning": "The model provided an incorrect publication date. The month and day are different from the reference answer."
+>>>>>>> main
     }
   },
   {
@@ -199,7 +215,11 @@
     "judge": {
       "score": 1,
       "correct": false,
+<<<<<<< HEAD
+      "reasoning": "The model answer 'posted-content' is too broad and does not accurately reflect the specific category 'journal-article' which is the typical format for studies in this domain."
+=======
       "reasoning": "The model answer 'posted-content' is too general and does not accurately reflect the specific category 'journal-article' which is a common and specific category for studies, especially in a medical context. 'Posted-content' could refer to almost anything online, lacking the academic rigor implied by 'studies'."
+>>>>>>> main
     }
   },
   {
@@ -226,9 +246,15 @@
     "retrieval_hit": true,
     "token_f1": 0.24489795918367346,
     "judge": {
+<<<<<<< HEAD
+      "score": 1,
+      "correct": false,
+      "reasoning": "The model answer describes general problems with large language models (LLMs) that motivate research into retrieval augmentation, but it does not state the main contribution of research specifically investigating 'Evaluation Methods Inference-Time Retrieval-Augmented' as asked by the question. It misses the core of the question."
+=======
       "score": 2,
       "correct": false,
       "reasoning": "The model answer describes general vulnerabilities of LLMs (hallucination, knowledge staleness, limited provenance), which are the motivation for research in areas like retrieval augmentation. However, it does not address the specific question about the 'main contribution of research investigating Evaluation Methods Inference-Time Retrieval-Augmented' nor does it mention retrieval augmentation or evaluation methods. It provides background context rather than a direct answer to the question's core."
+>>>>>>> main
     }
   },
   {
@@ -373,7 +399,11 @@
     "judge": {
       "score": 1,
       "correct": false,
+<<<<<<< HEAD
+      "reasoning": "The authors provided in the model answer are completely different from the correct authors."
+=======
       "reasoning": "The authors listed in the model answer are completely different from the authors in the reference answer."
+>>>>>>> main
     }
   },
   {
@@ -547,7 +577,11 @@
     "judge": {
       "score": 1,
       "correct": false,
+<<<<<<< HEAD
+      "reasoning": "Both the reference and model answers describe the problem statement or motivation for the research, not the main contribution of the paper. The contribution would be the development of the NLP/RAG chatbot to address this problem."
+=======
       "reasoning": "Both the model answer and the reference answer describe the problem or motivation for the paper, not its main contribution. The question specifically asks for the contribution."
+>>>>>>> main
     }
   },
   {

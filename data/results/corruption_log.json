@@ -4,7 +4,11 @@
   "seed": 42,
   "corruption_ratio": 0.2,
   "reference_date": "2026-08-06",
+<<<<<<< HEAD
+  "frozen_test_set_path": "D:\\vin\\lab10\\K3_Day10_Data-Pipeline-Data-Observability\\data\\eval\\test_set.json",
+=======
   "frozen_test_set_path": "/Users/trannguyenmyanh/Documents/AI_In_Action/K3_Day10_Data-Pipeline-Data-Observability/data/eval/test_set.json",
+>>>>>>> main
   "frozen_doc_ids_found_in_clean_data": [
     "10.1002/widm.70122",
     "10.21203/rs.3.rs-10186581/v1",

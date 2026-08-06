@@ -1,6 +1,10 @@
 {
   "report_name": "corrupted_quality.json",
+<<<<<<< HEAD
+  "generated_at": "2026-08-06T05:32:56.509061+00:00",
+=======
   "generated_at": "2026-08-06T05:08:35.154854+00:00",
+>>>>>>> main
   "status": "fail",
   "total_rows": 287,
   "freshness_threshold_days": 180,

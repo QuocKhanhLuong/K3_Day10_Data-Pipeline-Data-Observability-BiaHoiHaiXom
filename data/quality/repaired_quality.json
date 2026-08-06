@@ -1,6 +1,10 @@
 {
   "report_name": "repaired_quality.json",
+<<<<<<< HEAD
+  "generated_at": "2026-08-06T05:34:17.744731+00:00",
+=======
   "generated_at": "2026-08-06T05:10:04.094819+00:00",
+>>>>>>> main
   "status": "pass",
   "total_rows": 239,
   "freshness_threshold_days": 180,
