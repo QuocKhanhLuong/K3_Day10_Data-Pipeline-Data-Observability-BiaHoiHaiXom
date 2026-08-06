@@ -1,0 +1,111 @@
+{
+  "report_name": "corrupted_quality.json",
+  "generated_at": "2026-08-06T05:08:35.154854+00:00",
+  "status": "fail",
+  "total_rows": 287,
+  "freshness_threshold_days": 180,
+  "checks": [
+    {
+      "name": "dataset_not_empty",
+      "passed": true,
+      "observed": 287,
+      "expectation": "Dataset must contain at least one row."
+    },
+    {
+      "name": "required_columns",
+      "passed": true,
+      "observed": [],
+      "expectation": "All required cleaned-data columns must be present; extra columns are allowed."
+    },
+    {
+      "name": "paper_id_completeness",
+      "passed": true,
+      "observed": 0,
+      "expectation": "paper_id must be non-empty for every row."
+    },
+    {
+      "name": "paper_id_uniqueness",
+      "passed": false,
+      "observed": 48,
+      "expectation": "paper_id must be unique."
+    },
+    {
+      "name": "title_completeness",
+      "passed": true,
+      "observed": 0,
+      "expectation": "title must be non-empty for every row."
+    },
+    {
+      "name": "summary_completeness",
+      "passed": false,
+      "observed": 48,
+      "expectation": "summary must be non-empty for every row."
+    },
+    {
+      "name": "summary_min_length",
+      "passed": false,
+      "observed": 48,
+      "expectation": "Every summary must contain at least 100 characters."
+    },
+    {
+      "name": "published_date_parseable",
+      "passed": true,
+      "observed": 0,
+      "expectation": "published must be a parseable date for every row."
+    },
+    {
+      "name": "future_published_dates",
+      "passed": true,
+      "observed": 0,
+      "expectation": "published must not be later than the current UTC date."
+    },
+    {
+      "name": "age_days_numeric",
+      "passed": true,
+      "observed": 0,
+      "expectation": "age_days must be numeric for every row."
+    },
+    {
+      "name": "age_days_non_negative",
+      "passed": true,
+      "observed": 0,
+      "expectation": "age_days must be greater than or equal to zero."
+    },
+    {
+      "name": "authors_joined_completeness",
+      "passed": true,
+      "observed": 0,
+      "expectation": "authors_joined must be non-empty for every row."
+    },
+    {
+      "name": "categories_joined_completeness",
+      "passed": true,
+      "observed": 0,
+      "expectation": "categories_joined must be non-empty for every row."
+    },
+    {
+      "name": "embedding_text_completeness",
+      "passed": true,
+      "observed": 0,
+      "expectation": "text_for_embedding must be non-empty for every row."
+    },
+    {
+      "name": "embedding_text_canonical_format",
+      "passed": false,
+      "observed": 97,
+      "expectation": "text_for_embedding must equal 'Title: {title} | Authors: {authors_joined} | Summary: {summary}'."
+    },
+    {
+      "name": "freshness_ratio",
+      "passed": true,
+      "observed": 0.1672,
+      "expectation": "At most 20% of records may be stale or have invalid dates."
+    }
+  ],
+  "failed_checks": [
+    "paper_id_uniqueness",
+    "summary_completeness",
+    "summary_min_length",
+    "embedding_text_canonical_format"
+  ]
+}
