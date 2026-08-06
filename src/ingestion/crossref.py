@@ -10,7 +10,7 @@ from typing import Any
 
 import requests
 
-from core.config import Settings
+from core.config import Settings, load_settings
 from core.utils import normalize_whitespace, read_json, write_json
 
 
@@ -250,3 +250,15 @@ def load_raw_records(path: Path) -> list[PaperRecord]:
             )
         )
     return records
+
+
+if __name__ == "__main__":
+    settings = load_settings()
+    print("Fetching papers from Crossref API...")
+    print(f"Query: {settings.source_query}")
+    print(f"Filter: {settings.source_filter}")
+    records = fetch_source_records(settings)
+    print(f"Successfully fetched and parsed {len(records)} records.")
+    print(f"Raw API response saved to: {settings.paths.raw_api_response}")
+    print(f"Raw records saved to: {settings.paths.raw_records_json}")
+
