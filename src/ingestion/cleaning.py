@@ -104,7 +104,7 @@ def build_clean_dataframe(records: list[PaperRecord], run_date: datetime) -> pd.
 
         published_date = published_ts.date().isoformat()
         updated_value = updated_ts.isoformat() if updated_ts is not None else ""
-        age_days = max(0, int((run_timestamp.normalize() - published_ts.normalize()).days))
+        age_days = int((run_timestamp.normalize() - published_ts.normalize()).days)
         authors_joined = compact_join(authors)
         categories_joined = compact_join(categories)
         text_for_embedding = normalize_whitespace(
