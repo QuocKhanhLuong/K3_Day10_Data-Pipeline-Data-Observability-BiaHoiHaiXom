@@ -7,12 +7,12 @@ Thư mục `report/` cung cấp mẫu báo cáo cho **bài tập bắt buộc l�
 Mỗi nhóm nộp:
 
 1. Một [`group_report.md`](group_report.md) đại diện cho kết quả chung của nhóm.
-2. Mỗi thành viên hoàn thành thêm một bản [`individual_report.md`](individual_report.md) để mô tả vai trò, phần việc, kết quả và mức hiểu của mình trong nhóm.
+2. Mỗi thành viên hoàn thành một báo cáo riêng theo format `individual_report_HoTen.md` để mô tả vai trò, phần việc, kết quả và mức hiểu của mình trong nhóm.
 
 Khi cần lưu nhiều báo cáo thành viên trong cùng repository, nhóm nên tạo bản sao theo quy ước:
 
 ```text
-<MSSV>_HoTen.md
+individual_report_HoTen.md
 ```
 
 ## 2. Kết quả chung cần đạt
@@ -211,7 +211,7 @@ Không đánh dấu hoàn thành nếu report mô tả kết quả không khớp
 - [ ] Mỗi deliverable có owner và output rõ ràng.
 - [ ] Một thành viên có thể chạy lại toàn bộ pipeline từ hướng dẫn chung.
 - [ ] `group_report.md` khớp với code, artifacts và metrics.
-- [ ] Mỗi thành viên có một `individual_report.md` riêng về vai trò và phần việc của mình.
+- [ ] Mỗi thành viên có một `individual_report_HoTen.md` riêng về vai trò và phần việc của mình.
 - [ ] Tất cả thành viên có thể giải thích luồng end-to-end và phần mình phụ trách.
 - [ ] Không có `.env`, API key hoặc secret trong repository, report hoặc log.
 

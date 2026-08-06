@@ -29,7 +29,7 @@
 | Chạy embedding và tạo vector index | `src/retrieval/embeddings.py`, `src/retrieval/index.py` | Model `all-MiniLM-L6-v2` tạo vector 384 chiều; ChromaDB baseline có 239 documents và metadata `paper_id` |
 | Kiểm tra retrieval với frozen questions | `src/retrieval/index.py`, `src/retrieval/qa.py` | Xác nhận `ground_truth_doc_ids` tồn tại trong clean corpus và QA đọc được metadata authors/date/category |
 
-Role 2 không sở hữu retrieval, metrics hoặc corruption. Corruption/repaired và comparison report chưa được thực hiện trong tiến độ hiện tại.
+Role 2 không sở hữu retrieval, metrics hoặc corruption. Corruption/repaired do Role 4 thực hiện và đã có artifact; Role 2 kiểm tra rằng các trạng thái vẫn dùng cùng clean contract và frozen evaluation set.
 
 ## 3. Kết quả theo vai trò
 
@@ -134,7 +134,7 @@ Phần LLM/network không thuộc ownership chính của Role 2. Việc gọi Ge
 2. Mỗi evaluation sample có câu hỏi, ground truth và `ground_truth_doc_ids`. Evaluation chạy QA, so sánh retrieved IDs với ground-truth IDs để tính retrieval hit, sau đó so sánh answer với ground truth bằng token F1 và judge.
 3. Quality checks kiểm tra schema, completeness, uniqueness, summary length và embedding text. Freshness monitoring tập trung vào publication date, `age_days`, stale rows và freshness ratio.
 4. Cùng một test set là điều kiện cần để baseline, corrupted và repaired có cùng câu hỏi, ground truth và target documents. Khi đó thay đổi metrics mới có thể quy về thay đổi dataset/index.
-5. Repair thành công khi repaired dataset đạt quality PASS, freshness đạt FRESH, các artifact repaired được tạo từ `data/raw/crossref_records.json`, và metrics agent phục hồi so với corrupted/baseline. Phase 2 chưa chạy nên các tiêu chí repaired chưa có kết quả thực tế.
+5. Repair thành công khi repaired dataset đạt quality PASS, freshness đạt FRESH, các artifact repaired được tạo từ `data/raw/crossref_records.json`, và metrics agent phục hồi so với corrupted/baseline. Kết quả hiện tại cho thấy repaired data có 239 rows, quality PASS, freshness FRESH và metrics trở lại baseline.
 
 ## 8. Phân tích kết quả
 
@@ -142,12 +142,12 @@ Phần LLM/network không thuộc ownership chính của Role 2. Việc gọi Ge
 
 | Metric/signal | Baseline | Corrupted | Repaired | Nhận xét cá nhân |
 |---|---:|---:|---:|---|
-| `retrieval_hit_rate` | 0.6000 | Chưa chạy | Chưa chạy | Baseline có 12/20 sample hit theo artifact metrics |
-| `mean_token_f1` | 0.5642 | Chưa chạy | Chưa chạy | Answer overlap trung bình còn room for improvement |
-| `judge_accuracy` | 0.5000 | Chưa chạy | Chưa chạy | Phụ thuộc chất lượng answer và LLM/fallback judge |
-| `mean_judge_score` | 3.1000 | Chưa chạy | Chưa chạy | Mức trung bình trên thang 1–5 |
-| Quality checks | PASS | Chưa chạy | Chưa chạy | 239 clean rows đạt toàn bộ checks |
-| Freshness status | FRESH | Chưa chạy | Chưa chạy | stale ratio 0.0, future rows 0 |
+| `retrieval_hit_rate` | 0.6000 | 0.4500 | 0.6000 | Corruption giảm 0.15; repaired trở lại baseline |
+| `mean_token_f1` | 0.5642 | 0.2622 | 0.5642 | Corruption làm giảm answer overlap; repair khôi phục |
+| `judge_accuracy` | 0.5000 | 0.2500 | 0.5000 | Phụ thuộc chất lượng answer và LLM/fallback judge |
+| `mean_judge_score` | 3.1000 | 2.0500 | 3.1000 | Repaired trở lại điểm baseline hiện tại |
+| Quality checks | PASS | FAIL | PASS | Corrupted có duplicate/summary/embedding-format failures |
+| Freshness status | FRESH | FRESH theo threshold | FRESH | Corrupted có 48 stale rows, ratio 0.1672 |
 
 ### Kết luận từ số liệu
 
@@ -158,7 +158,7 @@ Raw/Clean data contract hợp lệ -> quality PASS và freshness FRESH
     -> baseline retrieval_hit_rate 0.6000, mean_token_f1 0.5642
 ```
 
-Hai chuỗi corruption → quality → metric và repair → recovery chưa thể kết luận vì `corruption_flow.py` chưa chạy. Không khẳng định corruption nào ảnh hưởng rõ nhất hoặc repair phục hồi metric nào khi chưa có `corruption_log.json`, corrupted metrics và repaired metrics.
+Corruption flow đã có `corruption_log.json`, corrupted metrics và repaired metrics. Corrupted data làm giảm retrieval hit rate từ 0.6000 xuống 0.4500 và mean token F1 từ 0.5642 xuống 0.2622; repaired metrics hiện tại trở lại baseline. Vai trò của Role 2 là xác nhận input/contract mà flow dùng vẫn đúng.
 
 ## 9. Điều học được và hướng cải thiện
 
@@ -170,14 +170,14 @@ Hai chuỗi corruption → quality → metric và repair → recovery chưa th�
 
 ### Nếu có thêm thời gian
 
-Chạy Phase 2 với cùng `data/eval/test_set.json`, kiểm tra corruption bắt buộc tác động đến ít nhất một `ground_truth_doc_id`, sau đó so sánh corrupted/repaired metrics. Với Role 2, cần kiểm tra thêm rằng repair từ raw snapshot tái tạo đúng clean schema và không làm thay đổi frozen test set.
+Đã chạy Phase 2 với cùng `data/eval/test_set.json`; Role 2 cần tiếp tục kiểm tra thêm rằng repair từ raw snapshot tái tạo đúng clean schema và không làm thay đổi frozen test set.
 
 ## 10. Cam kết của thành viên
 
 - [x] Nội dung báo cáo phản ánh đúng phần việc và mức hiểu của tôi.
 - [x] Tôi có thể giải thích luồng end-to-end, không chỉ module mình phụ trách.
 - [x] Mọi kết luận về kết quả đều có artifact hoặc metric để đối chiếu.
-- [x] Tôi không ghi “đã chạy thành công” cho phần corruption/repaired chưa được kiểm chứng.
+- [x] Tôi phân biệt rõ phần Role 2 sở hữu với artifact corruption/repaired do Role 4 bàn giao.
 - [x] Báo cáo không chứa `.env`, API key, token hoặc secret.
 - [x] Báo cáo này tập trung vào Role 2, không sao chép nguyên văn báo cáo nhóm.
 

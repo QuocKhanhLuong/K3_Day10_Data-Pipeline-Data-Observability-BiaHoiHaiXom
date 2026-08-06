@@ -96,20 +96,20 @@ Parser giữ raw record ở mức đủ thông tin cho cleaning. Việc strip ma
 2. Evaluation set chứa câu hỏi, ground truth và `ground_truth_doc_ids`. Metrics dùng các ID này để kiểm tra document đúng có xuất hiện trong retrieval result hay không.
 3. Quality checks kiểm tra schema/completeness/uniqueness và nội dung clean. Freshness theo dõi publication date, `age_days` và tỷ lệ stale. Hai lớp này khác nhau nhưng cùng đọc clean artifact.
 4. Baseline, corrupted và repaired phải dùng cùng test set để metric thay đổi do dữ liệu/index, không do câu hỏi hoặc ground truth khác nhau.
-5. Repair thành công khi bắt đầu lại từ `data/raw/crossref_records.json`, tạo repaired dataset hợp lệ, quality/freshness trở lại đạt và metrics RAG phục hồi. Corruption flow chưa chạy nên chưa có bằng chứng repaired.
+5. Repair thành công khi bắt đầu lại từ `data/raw/crossref_records.json`, tạo repaired dataset hợp lệ, quality/freshness trở lại đạt và metrics RAG phục hồi. Corruption flow hiện đã chạy; repaired artifact có 239 rows, quality PASS, freshness FRESH và metrics trở lại baseline.
 
 ## 8. Phân tích kết quả
 
 | Metric/signal | Baseline | Corrupted | Repaired | Nhận xét cá nhân |
 |---|---:|---:|---:|---|
-| `retrieval_hit_rate` | 0.6000 | Chưa chạy | Chưa chạy | Baseline được tính trên 20 answers |
-| `mean_token_f1` | 0.5642 | Chưa chạy | Chưa chạy | Chưa có so sánh sau corruption |
-| `judge_accuracy` | 0.5000 | Chưa chạy | Chưa chạy | Phụ thuộc LLM/fallback judge |
-| `mean_judge_score` | 3.1000 | Chưa chạy | Chưa chạy | Điểm baseline trung bình |
-| Quality checks | PASS | Chưa chạy | Chưa chạy | Clean input hợp lệ |
-| Freshness | FRESH | Chưa chạy | Chưa chạy | 0 stale rows, ratio 0.0 |
+| `retrieval_hit_rate` | 0.6000 | 0.4500 | 0.6000 | Corruption giảm hit rate; repair khôi phục |
+| `mean_token_f1` | 0.5642 | 0.2622 | 0.5642 | Corruption làm giảm answer overlap; repair khôi phục |
+| `judge_accuracy` | 0.5000 | 0.2500 | 0.5000 | Phụ thuộc LLM/fallback judge |
+| `mean_judge_score` | 3.1000 | 2.0500 | 3.1000 | Repair khôi phục điểm baseline |
+| Quality checks | PASS | FAIL | PASS | Corrupted bị phát hiện bởi observability |
+| Freshness | FRESH | FRESH theo threshold | FRESH | Corrupted có 48 stale rows, ratio 0.1672 |
 
-Hiện chưa thể kết luận corruption nào ảnh hưởng rõ nhất hoặc repair phục hồi metric nào vì Role 4 chưa chạy Phase 2. Bằng chứng hiện tại chỉ xác nhận ingestion tạo được raw contract đủ để Baseline Phase 1 và Role 2 tiếp tục xử lý.
+Corruption flow đã chạy và cho thấy lỗi dữ liệu làm giảm cả retrieval/answer quality; repair từ raw snapshot khôi phục các metrics hiện tại. Bằng chứng ingestion quan trọng nhất vẫn là raw contract đủ ổn định để Role 2/Role 4 tái sử dụng mà không fetch API lại.
 
 ## 9. Điều học được và hướng cải thiện
 
@@ -121,14 +121,14 @@ Hiện chưa thể kết luận corruption nào ảnh hưởng rõ nhất hoặc
 
 ### Nếu có thêm thời gian
 
-Bổ sung kiểm tra thống kê raw payload như tỷ lệ thiếu authors/categories/date, lưu số item bị loại trong ingestion log và chạy corruption flow để xác minh raw snapshot thực sự có thể dùng cho repair mà không fetch API lại.
+Bổ sung kiểm tra thống kê raw payload như tỷ lệ thiếu authors/categories/date và lưu số item bị loại trong ingestion log; các flow hiện tại đã dùng raw snapshot để repair mà không fetch API lại.
 
 ## 10. Cam kết của thành viên
 
 - [x] Nội dung báo cáo phản ánh đúng phần ingestion tôi phụ trách.
 - [x] Tôi có thể giải thích luồng end-to-end, không chỉ `crossref.py`.
 - [x] Kết luận baseline có artifact hoặc metric đối chiếu.
-- [x] Tôi không ghi “đã chạy thành công” cho corruption/repaired chưa được kiểm chứng.
+- [x] Tôi ghi nhận corruption/repaired sau khi các artifact và metrics đã được tạo; Role 1 không nhận ownership thay cho Role 4.
 - [x] Báo cáo không chứa `.env`, API key, token hoặc secret.
 - [x] Báo cáo này tập trung vào Role 1, không sao chép nguyên văn báo cáo nhóm.
 
