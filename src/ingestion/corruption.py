@@ -78,28 +78,80 @@ def _extract_test_samples(payload: Any) -> list[dict[str, Any]]:
     return samples
 
 
-def _load_frozen_doc_ids(test_set_path: Path) -> list[str]:
+def _append_unique(values: list[str], value: str) -> None:
+    if value and value not in values:
+        values.append(value)
+
+
+def _classify_question(question: str) -> str:
+    """Map the factual questions in test_set.json to the field they evaluate."""
+    normalized = normalize_whitespace(question).casefold()
+    if "who authored" in normalized or "author of" in normalized:
+        return "authors"
+    if "when was" in normalized and "published" in normalized:
+        return "published"
+    if "categor" in normalized:
+        return "categories"
+    if "main contribution" in normalized or "main finding" in normalized:
+        return "summary"
+    return "other"
+
+
+def _load_frozen_targets(
+    test_set_path: Path,
+) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     if not test_set_path.exists():
         raise FileNotFoundError(f"Frozen test set not found: {test_set_path}")
 
     with test_set_path.open("r", encoding="utf-8") as stream:
         samples = _extract_test_samples(json.load(stream))
 
-    frozen_ids: list[str] = []
-    for sample in samples:
+    targets = {
+        "all": [],
+        "authors": [],
+        "published": [],
+        "categories": [],
+        "summary": [],
+        "other": [],
+    }
+    doc_to_question_ids: dict[str, list[str]] = {}
+
+    for position, sample in enumerate(samples):
+        question_id = str(sample.get("id", f"sample_{position}")).strip()
+        question = str(sample.get("question", "")).strip()
+        if not question:
+            raise ValueError(f"Frozen test sample {question_id} has an empty question.")
+        target_field = _classify_question(question)
+
         doc_ids = sample.get("ground_truth_doc_ids", [])
         if isinstance(doc_ids, (str, int)):
             doc_ids = [doc_ids]
         if not isinstance(doc_ids, list):
             raise ValueError("ground_truth_doc_ids must be a list in every frozen test sample.")
+        if not doc_ids:
+            raise ValueError(
+                f"Frozen test sample {question_id} has no ground_truth_doc_ids."
+            )
         for doc_id in doc_ids:
-            normalized_id = str(doc_id).strip()
-            if normalized_id and normalized_id not in frozen_ids:
-                frozen_ids.append(normalized_id)
+            normalized_id = str(doc_id).strip().casefold()
+            if not normalized_id:
+                raise ValueError(
+                    f"Frozen test sample {question_id} contains an empty document ID."
+                )
+            _append_unique(targets["all"], normalized_id)
+            _append_unique(targets[target_field], normalized_id)
+            doc_to_question_ids.setdefault(normalized_id, [])
+            _append_unique(doc_to_question_ids[normalized_id], question_id)
 
-    if not frozen_ids:
+    if not targets["all"]:
         raise ValueError("Frozen test set contains no ground_truth_doc_ids.")
-    return frozen_ids
+    return targets, doc_to_question_ids
+
+
+def _load_frozen_doc_ids(test_set_path: Path) -> list[str]:
+    """Backward-compatible helper used by existing tests or integrations."""
+    targets, _ = _load_frozen_targets(test_set_path)
+    return targets["all"]
 
 
 def _clean_text(value: Any) -> str:
@@ -133,22 +185,26 @@ def _select_ids(
     ordered_ids: list[str],
     count: int,
     used_ids: set[str],
-    forced_id: str | None = None,
+    forced_ids: list[str] | None = None,
 ) -> list[str]:
-    """Choose deterministic targets, preferring unused rows and an optional frozen ID."""
-    selected: list[str] = []
-    if forced_id is not None and forced_id in ordered_ids:
-        selected.append(forced_id)
+    """Choose targets while always retaining semantically matched frozen IDs."""
+    ordered_id_set = set(ordered_ids)
+    selected = [
+        paper_id
+        for paper_id in (forced_ids or [])
+        if paper_id in ordered_id_set
+    ]
+    effective_count = max(count, len(selected))
 
     for paper_id in ordered_ids:
-        if len(selected) >= count:
+        if len(selected) >= effective_count:
             break
         if paper_id not in selected and paper_id not in used_ids:
             selected.append(paper_id)
 
-    if len(selected) < count:
+    if len(selected) < effective_count:
         for paper_id in ordered_ids:
-            if len(selected) >= count:
+            if len(selected) >= effective_count:
                 break
             if paper_id not in selected:
                 selected.append(paper_id)
@@ -171,6 +227,17 @@ def _field_change(
     }
 
 
+def _question_ids_for_papers(
+    paper_ids: list[str],
+    doc_to_question_ids: dict[str, list[str]],
+) -> list[str]:
+    question_ids: list[str] = []
+    for paper_id in paper_ids:
+        for question_id in doc_to_question_ids.get(paper_id.casefold(), []):
+            _append_unique(question_ids, question_id)
+    return question_ids
+
+
 def corrupt_clean_dataframe(
     df: pd.DataFrame,
     output_log_path: Path,
@@ -183,9 +250,10 @@ def corrupt_clean_dataframe(
 ) -> pd.DataFrame:
     """Create the four controlled corruption scenarios required by Lab 10.
 
-    At least the blank-summary and add-noise scenarios are forced to overlap
-    documents referenced by the frozen evaluation set. The function is
-    deterministic for a fixed input, seed, ratio, and reference date.
+    Frozen documents are assigned to corruption scenarios according to the
+    fields evaluated by their questions: summary, publication date, authors,
+    or categories. The function is deterministic for a fixed input, seed,
+    ratio, and reference date.
     """
     _validate_clean_dataframe(df)
     if not 0 < corruption_ratio <= 1:
@@ -196,28 +264,52 @@ def corrupt_clean_dataframe(
     output_csv_path = Path(output_csv_path) if output_csv_path is not None else None
 
     corrupted = df.copy(deep=True).reset_index(drop=True)
-    corrupted["paper_id"] = corrupted["paper_id"].astype(str)
+    corrupted["paper_id"] = corrupted["paper_id"].astype(str).str.strip()
 
-    frozen_ids = _load_frozen_doc_ids(test_set_path)
+    frozen_targets, doc_to_question_ids = _load_frozen_targets(test_set_path)
     available_ids = corrupted["paper_id"].drop_duplicates().tolist()
-    available_id_set = set(available_ids)
-    frozen_available_ids = [
-        paper_id for paper_id in frozen_ids if paper_id in available_id_set
-    ]
-    if not frozen_available_ids:
+    available_id_lookup = {
+        paper_id.casefold(): paper_id
+        for paper_id in available_ids
+    }
+    missing_frozen_ids = sorted(
+        set(frozen_targets["all"]) - set(available_id_lookup)
+    )
+    if missing_frozen_ids:
         raise ValueError(
-            "No ground_truth_doc_ids from the frozen test set exist in the clean dataframe."
+            "Frozen test set references documents missing from the clean dataframe: "
+            f"{missing_frozen_ids}"
         )
+    frozen_available_by_field = {
+        field: [available_id_lookup[paper_id] for paper_id in paper_ids]
+        for field, paper_ids in frozen_targets.items()
+    }
+    frozen_available_ids = frozen_available_by_field["all"]
+    frozen_available_id_set = set(frozen_available_ids)
 
     rng = random.Random(seed)
     shuffled_ids = available_ids.copy()
     rng.shuffle(shuffled_ids)
+    filler_first_ids = [
+        paper_id
+        for paper_id in shuffled_ids
+        if paper_id not in frozen_available_id_set
+    ] + shuffled_ids
     count = max(1, round(len(available_ids) * corruption_ratio))
     used_ids: set[str] = set()
     operations: list[dict[str, Any]] = []
 
-    # 1. Blank Summary: force overlap with a document used by the frozen test set.
-    blank_ids = _select_ids(shuffled_ids, count, used_ids, frozen_available_ids[0])
+    # 1. Blank Summary: target q4/q8-style main-contribution questions.
+    blank_target_ids = (
+        frozen_available_by_field["summary"]
+        or [frozen_available_ids[0]]
+    )
+    blank_ids = _select_ids(
+        filler_first_ids,
+        count,
+        used_ids,
+        forced_ids=blank_target_ids,
+    )
     blank_changes: list[dict[str, Any]] = []
     for paper_id in blank_ids:
         row_index = corrupted.index[corrupted["paper_id"] == paper_id][0]
@@ -247,17 +339,28 @@ def corrupt_clean_dataframe(
             "name": "blank_summary",
             "count": len(blank_ids),
             "paper_ids": blank_ids,
+            "semantic_target": "summary",
+            "frozen_question_ids": _question_ids_for_papers(
+                blank_ids,
+                doc_to_question_ids,
+            ),
             "changes": blank_changes,
         }
     )
 
-    # 2. Add Noise: modify text_for_embedding directly as required by the lab.
-    noise_frozen_id = (
-        frozen_available_ids[1]
-        if len(frozen_available_ids) > 1
-        else frozen_available_ids[0]
+    # 2. Add Noise: target author/category/other questions through retrieval text.
+    noise_target_ids: list[str] = []
+    for field in ("authors", "categories", "other"):
+        for paper_id in frozen_available_by_field[field]:
+            _append_unique(noise_target_ids, paper_id)
+    if not noise_target_ids:
+        noise_target_ids = [frozen_available_ids[0]]
+    noise_ids = _select_ids(
+        filler_first_ids,
+        count,
+        used_ids,
+        forced_ids=noise_target_ids,
     )
-    noise_ids = _select_ids(shuffled_ids, count, used_ids, noise_frozen_id)
     noise_changes: list[dict[str, Any]] = []
     noise_payload = " ".join([NOISE_TEXT] * NOISE_REPETITIONS)
     for paper_id in noise_ids:
@@ -272,18 +375,33 @@ def corrupt_clean_dataframe(
             "name": "add_noise",
             "count": len(noise_ids),
             "paper_ids": noise_ids,
+            "semantic_target": "authors/categories/retrieval",
+            "frozen_question_ids": _question_ids_for_papers(
+                noise_ids,
+                doc_to_question_ids,
+            ),
             "changes": noise_changes,
         }
     )
 
-    # 3. Stale Date: move the newest documents to 2000 and recompute age_days.
+    # 3. Stale Date: target q2/q6/q10-style publication-date questions.
     newest_ids = (
         corrupted.assign(_published_sort=pd.to_datetime(corrupted["published"], errors="coerce"))
         .sort_values("_published_sort", ascending=False, na_position="last")["paper_id"]
         .drop_duplicates()
         .tolist()
     )
-    stale_ids = _select_ids(newest_ids, count, used_ids)
+    newest_filler_first_ids = [
+        paper_id
+        for paper_id in newest_ids
+        if paper_id not in frozen_available_id_set
+    ] + newest_ids
+    stale_ids = _select_ids(
+        newest_filler_first_ids,
+        count,
+        used_ids,
+        forced_ids=frozen_available_by_field["published"],
+    )
     evaluation_date = pd.Timestamp(reference_date or date.today()).normalize().tz_localize(None)
     stale_date = pd.Timestamp("2000-01-01")
     stale_age_days = int((evaluation_date - stale_date).days)
@@ -315,15 +433,22 @@ def corrupt_clean_dataframe(
             "name": "stale_date",
             "count": len(stale_ids),
             "paper_ids": stale_ids,
+            "semantic_target": "published",
+            "frozen_question_ids": _question_ids_for_papers(
+                stale_ids,
+                doc_to_question_ids,
+            ),
             "changes": stale_changes,
         }
     )
 
     # 4. Duplicates: append complete rows while preserving their paper_id values.
-    duplicate_frozen_id = (
-        frozen_available_ids[2] if len(frozen_available_ids) > 2 else frozen_available_ids[-1]
+    duplicate_ids = _select_ids(
+        filler_first_ids,
+        count,
+        used_ids,
+        forced_ids=[frozen_available_ids[-1]],
     )
-    duplicate_ids = _select_ids(shuffled_ids, count, used_ids, duplicate_frozen_id)
     duplicate_rows = corrupted[corrupted["paper_id"].isin(duplicate_ids)].copy(deep=True)
     duplicate_changes = [
         _field_change(paper_id, "row_count_for_paper_id", 1, 2)
@@ -335,6 +460,11 @@ def corrupt_clean_dataframe(
             "name": "duplicates",
             "count": len(duplicate_rows),
             "paper_ids": duplicate_ids,
+            "semantic_target": "paper_id uniqueness",
+            "frozen_question_ids": _question_ids_for_papers(
+                duplicate_ids,
+                doc_to_question_ids,
+            ),
             "changes": duplicate_changes,
         }
     )
@@ -344,11 +474,36 @@ def corrupt_clean_dataframe(
             paper_id
             for operation in operations
             for paper_id in operation["paper_ids"]
-            if paper_id in set(frozen_available_ids)
+            if paper_id in frozen_available_id_set
         }
     )
     if not corrupted_frozen_ids:
         raise RuntimeError("Corruption did not overlap any document in the frozen test set.")
+
+    expected_question_ids: list[str] = []
+    for question_ids in doc_to_question_ids.values():
+        for question_id in question_ids:
+            _append_unique(expected_question_ids, question_id)
+    covered_question_id_set = {
+        question_id
+        for operation in operations
+        for question_id in operation["frozen_question_ids"]
+    }
+    covered_question_ids = [
+        question_id
+        for question_id in expected_question_ids
+        if question_id in covered_question_id_set
+    ]
+    uncovered_question_ids = [
+        question_id
+        for question_id in expected_question_ids
+        if question_id not in covered_question_id_set
+    ]
+    if uncovered_question_ids:
+        raise RuntimeError(
+            "Some frozen questions were not targeted by corruption: "
+            f"{uncovered_question_ids}"
+        )
 
     log = {
         "input_rows": int(len(df)),
@@ -360,6 +515,14 @@ def corrupt_clean_dataframe(
         "frozen_doc_ids_found_in_clean_data": frozen_available_ids,
         "corrupted_frozen_doc_ids": corrupted_frozen_ids,
         "overlap_requirement_passed": True,
+        "frozen_question_ids": expected_question_ids,
+        "covered_frozen_question_ids": covered_question_ids,
+        "all_frozen_questions_covered": True,
+        "semantic_frozen_targets": {
+            field: paper_ids
+            for field, paper_ids in frozen_available_by_field.items()
+            if field != "all"
+        },
         "operations": operations,
         "expected_effects": {
             "completeness": "FAIL because selected summaries are blank.",
