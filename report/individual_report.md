@@ -6,13 +6,13 @@
 
 | Thông tin         | Nội dung                  |
 | ------------------ | -------------------------- |
-| Họ và tên       | Nguyễn Thu Huyền             |
-| MSSV               | 2A202601027                    |
-| Khóa/Lớp         | K3             |
-| Tên nhóm         | BiaHoiHaiXom    |
-| Vai trò chính    | Source Ingestion Owner           |
-| Repository         | https://github.com/QuocKhanhLuong/K3_Day10_Data-Pipeline-Data-Observability |
-| Ngày hoàn thành | 2026-08-06               |
+| Họ và tên       | [Họ và tên]             |
+| MSSV               | [MSSV]                     |
+| Khóa/Lớp         | [K3 hoặc K4]              |
+| Tên nhóm         | [Tên hoặc mã nhóm]     |
+| Vai trò chính    | [Vai trò]                 |
+| Repository         | [Đường dẫn repository] |
+| Ngày hoàn thành | [YYYY-MM-DD]               |
 
 ## 2. Vai trò và phạm vi công việc
 
@@ -46,7 +46,7 @@ Nêu một output cụ thể mà phần việc của bạn tạo ra hoặc giúp
 
 ### Vấn đề cần giải quyết
 
-Crawl data cho pipeline, đảm bảo data crawl đúng chuẩn
+[Phần của bạn giải quyết vấn đề gì trong pipeline?]
 
 ### Cách triển khai
 

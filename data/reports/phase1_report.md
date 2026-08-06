@@ -8,7 +8,7 @@
 - Filter: `from-pub-date:2026-02-07,has-abstract:true`
 - Raw records: 240
 - Clean records: 239
-- Evaluation samples: 10
+- Evaluation samples: 20
 - Raw response artifact: D:\GIT\K3_Day10_Data-Pipeline-Data-Observability\data\raw\crossref_response.json
 - Raw records artifact: D:\GIT\K3_Day10_Data-Pipeline-Data-Observability\data\raw\crossref_records.json
 - Clean CSV artifact: D:\GIT\K3_Day10_Data-Pipeline-Data-Observability\data\clean\papers_clean.csv
@@ -18,10 +18,10 @@
 
 | Metric | Baseline |
 |---|---|
-| retrieval_hit_rate | 1.0000 |
-| mean_token_f1 | 1.0000 |
-| judge_accuracy | 1.0000 |
-| mean_judge_score | 5 |
+| retrieval_hit_rate | 0.6000 |
+| mean_token_f1 | 0.5642 |
+| judge_accuracy | 0.5000 |
+| mean_judge_score | 3.1000 |
 
 ### Missing metric warnings
 
