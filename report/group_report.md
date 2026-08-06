@@ -13,13 +13,19 @@
 
 ### Thành viên và phân công
 
-| STT | Họ và tên | MSSV | Vai trò chính | Module/deliverable sở hữu |
-| --: | --- | --- | --- | --- |
-| 1 | [Họ tên] | [MSSV] | [Vai trò] | [File, hàm hoặc artifact] |
-| 2 | [Họ tên] | [MSSV] | [Vai trò] | [File, hàm hoặc artifact] |
-| 3 | [Họ tên] | [MSSV] | [Vai trò] | [File, hàm hoặc artifact] |
-| 4 | [Nếu có] | [MSSV] | [Vai trò] | [File, hàm hoặc artifact] |
-| 5 | [Nếu có] | [MSSV] | [Vai trò] | [File, hàm hoặc artifact] |
+| STT | Họ và tên | MSSV | Vai trò chính | Module/deliverable sở hữu | Artifact đầu vào bắt buộc | Người nhận đầu ra |
+| --: | --- | --- | --- | --- | --- | --- |
+| 1 | Thành viên 1 | Chưa cung cấp | Role 1 — Source Ingestion | `src/ingestion/crossref.py`; tạo `data/raw/crossref_response.json` và `data/raw/crossref_records.json` | `Settings` với source query/filter và artifact paths | Thành viên 2 |
+| 2 | Thành viên 2 | Chưa cung cấp | Role 2 — Cleaning & Evaluation Set | `src/ingestion/cleaning.py`, `src/evaluation/testset.py`; tạo `data/clean/papers_clean.csv`, `data/clean/papers_clean.json`, `data/eval/test_set.json` | `data/raw/crossref_records.json` từ Thành viên 1 | Thành viên 3 và Thành viên 4 |
+| 3 | Thành viên 3 | Chưa cung cấp | Role 3 — Data Observability | `src/observability/quality.py`, `src/observability/reporting.py`; tạo quality/freshness JSON và `data/reports/phase1_report.md`, `data/reports/corruption_report.md` | Clean schema/artifact từ Thành viên 2; metrics JSON của baseline/corrupted/repaired khi chạy report | Thành viên 4 |
+| 4 | Thành viên 4 | Chưa cung cấp | Role 4 — Corruption & Integration | `src/ingestion/corruption.py`, `src/pipelines/phase1.py`, `src/pipelines/corruption_flow.py`; tạo corrupted/repaired artifacts, metrics, logs và hoàn tất integration | Clean dataset và frozen test set từ Thành viên 2; observability contract/module từ Thành viên 3 | Cả nhóm |
+
+#### Contract và thứ tự bàn giao
+
+- Trước khi Role 2 bắt đầu, phải có `data/raw/crossref_records.json` do Thành viên 1 tạo.
+- Trước khi Role 3 bắt đầu tích hợp, phải có clean schema thống nhất và tối thiểu `data/clean/papers_clean.csv` hoặc `data/clean/papers_clean.json` cùng `data/eval/test_set.json` từ Thành viên 2. Khi sinh báo cáo metrics, các file `data/results/baseline_metrics.json`, `data/results/corrupted_metrics.json` và `data/results/repaired_metrics.json` phải được đọc từ artifact thực tế.
+- Role 3 bàn giao cho Thành viên 4 các hàm quality/freshness/reporting và contract output; cùng một quality-checking logic phải dùng cho Baseline, Corrupted và Repaired.
+- Thành viên 4 là người nhận trực tiếp output của Role 3 để ghép pipeline; sau đó bàn giao kết quả end-to-end cho cả nhóm.
 
 ## 2. Tóm tắt kết quả
 
