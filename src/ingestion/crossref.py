@@ -62,11 +62,17 @@ def _date_from_parts(value: Any) -> str:
 
 
 def _published_date(item: dict[str, Any]) -> str:
+    today_str = date.today().isoformat()
     for key in ("published-print", "published-online", "published", "issued", "created"):
         parsed = _date_from_parts(item.get(key))
-        if parsed:
+        if parsed and parsed <= today_str:
             return parsed
+    for key in ("created", "issued", "deposited"):
+        parsed = _date_from_parts(item.get(key))
+        if parsed:
+            return min(parsed, today_str)
     return ""
+
 
 
 def _updated_date(item: dict[str, Any]) -> str:
@@ -119,6 +125,7 @@ def parse_crossref_payload(payload: dict) -> list[PaperRecord]:
     items = message.get("items", []) if isinstance(message, dict) else []
     records: list[PaperRecord] = []
     seen_ids: set[str] = set()
+    today_str = date.today().isoformat()
 
     for item in items:
         if not isinstance(item, dict):
@@ -133,6 +140,11 @@ def parse_crossref_payload(payload: dict) -> list[PaperRecord]:
         canonical_id = paper_id.lower()
         if canonical_id in seen_ids:
             continue
+
+        published = _published_date(item)
+        if published and published > today_str:
+            continue
+
         seen_ids.add(canonical_id)
 
         categories = [
@@ -153,7 +165,7 @@ def parse_crossref_payload(payload: dict) -> list[PaperRecord]:
                 authors=_author_names(item),
                 categories=categories,
                 primary_category=primary_category,
-                published=_published_date(item),
+                published=published,
                 updated=_updated_date(item),
                 abs_url=str(item.get("URL") or ""),
                 pdf_url=_pdf_url(item),
@@ -166,62 +178,109 @@ def parse_crossref_payload(payload: dict) -> list[PaperRecord]:
 
 def fetch_source_records(settings: Settings) -> list[PaperRecord]:
     """Fetch Crossref records, persist the raw response, and persist parsed records."""
-    params = {
-        "query": settings.source_query,
-        "filter": settings.source_filter,
-        "rows": settings.max_results,
-        "sort": "published",
-        "order": "desc",
-    }
+    today_str = date.today().isoformat()
+    filter_str = settings.source_filter
+    if "until-pub-date" not in filter_str:
+        filter_str = f"{filter_str},until-pub-date:{today_str}"
+
     headers = {
         "Accept": "application/json",
         "User-Agent": "day10-data-observability-lab/0.1 (educational use)",
     }
 
-    response: requests.Response | None = None
-    last_error: Exception | None = None
-    for attempt in range(5):
-        try:
-            response = requests.get(
-                CROSSREF_API_URL,
-                params=params,
-                headers=headers,
-                timeout=30,
-            )
-            if response.status_code not in RETRYABLE_STATUS_CODES:
-                response.raise_for_status()
-                break
-            last_error = RuntimeError(
-                f"Crossref returned retryable status {response.status_code}: {response.text[:200]}"
-            )
-        except requests.RequestException as exc:
-            last_error = exc
+    target_count = settings.max_results
+    all_records: list[PaperRecord] = []
+    seen_ids: set[str] = set()
+    raw_payloads: list[dict] = []
+    all_raw_items: list[dict] = []
 
-        if attempt < 4:
-            retry_after = 0
-            if response is not None:
-                try:
-                    retry_after = int(response.headers.get("Retry-After", "0"))
-                except ValueError:
-                    retry_after = 0
-            time.sleep(max(retry_after, 2**attempt))
-    else:
-        raise RuntimeError(f"Crossref request failed after retries: {last_error}") from last_error
+    batch_size = max(50, target_count)
+    offset = 0
+    max_pages = 10
 
-    if response is None:
-        raise RuntimeError("Crossref request did not produce a response.")
+    for page in range(max_pages):
+        if len(all_records) >= target_count:
+            break
 
-    payload = response.json()
-    write_json(settings.paths.raw_api_response, payload)
+        params = {
+            "query": settings.source_query,
+            "filter": filter_str,
+            "rows": batch_size,
+            "offset": offset,
+            "sort": "score",
+            "order": "desc",
+        }
 
-    records = parse_crossref_payload(payload)
-    if not records:
+        response: requests.Response | None = None
+        last_error: Exception | None = None
+        for attempt in range(5):
+            try:
+                response = requests.get(
+                    CROSSREF_API_URL,
+                    params=params,
+                    headers=headers,
+                    timeout=30,
+                )
+                if response.status_code not in RETRYABLE_STATUS_CODES:
+                    response.raise_for_status()
+                    break
+                last_error = RuntimeError(
+                    f"Crossref returned retryable status {response.status_code}: {response.text[:200]}"
+                )
+            except requests.RequestException as exc:
+                last_error = exc
+
+            if attempt < 4:
+                retry_after = 0
+                if response is not None:
+                    try:
+                        retry_after = int(response.headers.get("Retry-After", "0"))
+                    except ValueError:
+                        retry_after = 0
+                time.sleep(max(retry_after, 2**attempt))
+        else:
+            if not all_records:
+                raise RuntimeError(f"Crossref request failed after retries: {last_error}") from last_error
+            break
+
+        if response is None:
+            break
+
+        payload = response.json()
+        raw_payloads.append(payload)
+        items = payload.get("message", {}).get("items", []) if isinstance(payload, dict) else []
+        if not items:
+            break
+
+        all_raw_items.extend(items)
+        batch_records = parse_crossref_payload(payload)
+
+        for rec in batch_records:
+            if rec.paper_id.lower() not in seen_ids:
+                seen_ids.add(rec.paper_id.lower())
+                all_records.append(rec)
+
+        offset += batch_size
+
+    if not all_records:
         raise RuntimeError(
             "Crossref returned no usable records. Check SOURCE query/filter or inspect the raw response artifact."
         )
 
+    records = all_records[:target_count]
+
+    composite_payload = {
+        "status": "ok",
+        "message-type": "work-list",
+        "message": {
+            "total-results": len(all_raw_items),
+            "items": all_raw_items,
+        },
+    }
+    write_json(settings.paths.raw_api_response, composite_payload)
     write_json(settings.paths.raw_records_json, [asdict(record) for record in records])
     return records
+
 
 
 def load_raw_records(path: Path) -> list[PaperRecord]:
