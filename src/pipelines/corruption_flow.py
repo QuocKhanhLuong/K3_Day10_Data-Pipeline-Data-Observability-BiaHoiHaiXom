@@ -394,3 +394,8 @@ def main() -> None:
     print(f"Corrupted quality: {_status(corrupted_quality)}")
     print(f"Repaired quality: {_status(repaired_quality)}")
     print(f"Report: {settings.paths.comparison_report}")
+
+
+if __name__ == "__main__":
+    main()
+
