@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from datetime import UTC, datetime
+from html import unescape
+import json
+from pathlib import Path
+import re
 from typing import Any, Iterable
 
 import pandas as pd
 
-from core.utils import compact_join, normalize_whitespace
+from core.utils import compact_join, normalize_whitespace, write_csv, write_json
 from ingestion.crossref import PaperRecord
 
 
@@ -14,34 +18,56 @@ MIN_SUMMARY_CHARS = 100
 
 
 def _normalize_text(value: Any) -> str:
-    """Convert a possibly missing scalar value into normalized text."""
+    """Remove XML/HTML markup and normalize a possibly missing scalar value."""
     if value is None:
         return ""
     if not isinstance(value, (list, tuple, dict, set)) and pd.isna(value):
         return ""
-    return normalize_whitespace(str(value))
+
+    text = unescape(str(value))
+    text = re.sub(r"<[^>]*>", " ", text)
+    return normalize_whitespace(text)
 
 
-def _normalize_list(values: Iterable[str] | str | None) -> list[str]:
+def _append_normalized(value: Any, normalized: list[str], seen: set[str]) -> None:
+    """Flatten scalar/list/dict values into a de-duplicated text list."""
+    if value is None:
+        return
+    if isinstance(value, dict):
+        given = _normalize_text(value.get("given"))
+        family = _normalize_text(value.get("family"))
+        if given or family:
+            _append_normalized(" ".join(part for part in (given, family) if part), normalized, seen)
+            return
+
+        for key in ("name", "label", "term", "value", "text"):
+            if value.get(key) not in (None, ""):
+                _append_normalized(value[key], normalized, seen)
+                return
+
+        for key in ("author", "authors", "category", "categories", "items"):
+            if key in value:
+                _append_normalized(value[key], normalized, seen)
+                return
+        return
+
+    if isinstance(value, (list, tuple, set)):
+        for item in value:
+            _append_normalized(item, normalized, seen)
+        return
+
+    item = _normalize_text(value)
+    item_key = item.casefold()
+    if item and item_key not in seen:
+        normalized.append(item)
+        seen.add(item_key)
+
+
+def _normalize_list(values: Any) -> list[str]:
     """Normalize list-like fields while preserving order and removing duplicates."""
-    if values is None:
-        return []
-    if isinstance(values, str):
-        values = [values]
-    else:
-        try:
-            iter(values)
-        except TypeError:
-            values = [values]  # type: ignore[list-item]
-
     normalized: list[str] = []
     seen: set[str] = set()
-    for value in values:
-        item = _normalize_text(value)
-        item_key = item.casefold()
-        if item and item_key not in seen:
-            normalized.append(item)
-            seen.add(item_key)
+    _append_normalized(values, normalized, seen)
     return normalized
 
 
@@ -71,8 +97,8 @@ def build_clean_dataframe(records: list[PaperRecord], run_date: datetime) -> pd.
         if primary_category and primary_category.casefold() not in category_keys:
             categories.insert(0, primary_category)
 
-        published_ts = _parse_date(row["published"])
-        updated_ts = _parse_date(row["updated"])
+        published_ts = _parse_date(row.get("published"))
+        updated_ts = _parse_date(row.get("updated"))
         if not paper_id or not title or len(summary) < MIN_SUMMARY_CHARS or published_ts is None:
             continue
 
@@ -82,17 +108,7 @@ def build_clean_dataframe(records: list[PaperRecord], run_date: datetime) -> pd.
         authors_joined = compact_join(authors)
         categories_joined = compact_join(categories)
         text_for_embedding = normalize_whitespace(
-            "\n".join(
-                part
-                for part in (
-                    f"Title: {title}",
-                    f"Summary: {summary}",
-                    f"Authors: {authors_joined}" if authors_joined else "",
-                    f"Categories: {categories_joined}" if categories_joined else "",
-                    f"Published: {published_date}",
-                )
-                if part
-            )
+            f"Title: {title} | Authors: {authors_joined} | Summary: {summary}"
         )
 
         cleaned_rows.append(
@@ -119,17 +135,17 @@ def build_clean_dataframe(records: list[PaperRecord], run_date: datetime) -> pd.
     columns = [
         "paper_id",
         "title",
-        "summary",
         "authors",
+        "authors_joined",
+        "summary",
         "categories",
+        "categories_joined",
         "primary_category",
         "published",
         "updated",
         "abs_url",
         "pdf_url",
         "comment",
-        "authors_joined",
-        "categories_joined",
         "summary_chars",
         "age_days",
         "text_for_embedding",
@@ -148,3 +164,12 @@ def build_clean_dataframe(records: list[PaperRecord], run_date: datetime) -> pd.
         .reset_index(drop=True)
     )
     return df
+
+
+def save_clean_data(df: pd.DataFrame, output_dir: Path) -> tuple[Path, Path]:
+    """Persist cleaned records as the CSV and JSON artifacts used by the pipeline."""
+    csv_path = output_dir / "papers_clean.csv"
+    json_path = output_dir / "papers_clean.json"
+    write_csv(df, csv_path)
+    write_json(json_path, json.loads(df.to_json(orient="records")))
+    return csv_path, json_path
